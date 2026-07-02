@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: company-intranet-deployment
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: company-intranet
+
+  template:
+    metadata:
+      labels:
+        app: company-intranet
+
+    spec:
+      containers:
+      - name: company-intranet
+        image: dineshreddy5/demo-image:v1
+        imagePullPolicy: Always
+
+        ports:
+        - containerPort: 8081
