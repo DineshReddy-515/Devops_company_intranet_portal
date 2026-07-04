@@ -15,11 +15,11 @@ pipeline {
         stage('Checkout') {
             steps {
                 git branch: 'main',
-                url: 'https://github.com/DineshReddy-515/Devops_company_intranet_portal.git'
+                    url: 'https://github.com/DineshReddy-515/Devops_company_intranet_portal.git'
             }
         }
 
-        stage('Build') {
+        stage('Build Maven Project') {
             steps {
                 bat 'mvn clean package'
             }
@@ -31,9 +31,19 @@ pipeline {
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Docker Login & Push') {
             steps {
-                bat 'docker push %IMAGE_NAME%'
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub',
+                    usernameVariable: 'DOCKER_USERNAME',
+                    passwordVariable: 'DOCKER_PASSWORD'
+                )]) {
+
+                    bat '''
+                    echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
+                    docker push %IMAGE_NAME%
+                    '''
+                }
             }
         }
 
@@ -43,15 +53,34 @@ pipeline {
                 bat 'kubectl rollout restart deployment company-intranet-deployment'
             }
         }
+
+        stage('Verify Deployment') {
+            steps {
+                bat 'kubectl get deployments'
+                bat 'kubectl get pods'
+                bat 'kubectl get svc'
+            }
+        }
     }
 
     post {
         success {
-            echo 'Deployment Successful'
+            echo '==================================='
+            echo ' Deployment Successful!'
+            echo ' Docker Image Pushed!'
+            echo ' Kubernetes Updated!'
+            echo '==================================='
         }
 
         failure {
-            echo 'Deployment Failed'
+            echo '==================================='
+            echo ' Deployment Failed!'
+            echo 'Check Console Output.'
+            echo '==================================='
+        }
+
+        always {
+            bat 'docker logout'
         }
     }
 }
